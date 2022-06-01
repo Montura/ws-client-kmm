@@ -7,11 +7,12 @@ struct ContentView: View {
 	@State var greet = "Loading..."
 
 	func load() {
+        greet += greeting.greeting() + "\n\n"
         greeting.getHtml { result, error in
             if let result = result {
-                self.greet = result
+                self.greet += result
             } else if let error = error {
-                greet = "Error: \(error)"
+                greet += "Error: \(error)"
             }
         }
     }
