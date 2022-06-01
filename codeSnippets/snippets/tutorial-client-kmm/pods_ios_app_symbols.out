@@ -1,0 +1,28 @@
+
+./shared/build/bin/iosArm64/podDebugFramework/shared.framework/Pods_iosApp(Pods_iosApp_vers.o):
+0000000000000030 S _Pods_iosAppVersionNumber
+0000000000000000 S _Pods_iosAppVersionString
+0000000000000039 s l_llvm.cmdline
+0000000000000038 s l_llvm.embedded.module
+0000000000000000 t ltmp0
+0000000000000000 s ltmp1
+0000000000000038 s ltmp2
+0000000000000039 s ltmp3
+
+./shared/build/bin/iosArm64/podDebugFramework/shared.framework/Pods_iosApp(Pods-iosApp-dummy.o):
+00000000000000d0 S _OBJC_CLASS_$_PodsDummy_Pods_iosApp
+00000000000000a8 S _OBJC_METACLASS_$_PodsDummy_Pods_iosApp
+0000000000000060 s __OBJC_CLASS_RO_$_PodsDummy_Pods_iosApp
+0000000000000018 s __OBJC_METACLASS_RO_$_PodsDummy_Pods_iosApp
+0000000000000000 s l_OBJC_CLASS_NAME_
+00000000000000f8 s l_OBJC_LABEL_CLASS_$
+0000000000000101 s l_llvm.cmdline
+0000000000000100 s l_llvm.embedded.module
+0000000000000000 t ltmp0
+0000000000000000 s ltmp1
+0000000000000018 s ltmp2
+00000000000000a8 s ltmp3
+00000000000000f8 s ltmp4
+0000000000000100 s ltmp5
+0000000000000101 s ltmp6
+0000000000001659 s ltmp7
