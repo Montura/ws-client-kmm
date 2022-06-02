@@ -6,10 +6,24 @@ struct ContentView: View {
 
 	@State var greet = "Loading..."
 
+    // mapping to Kotlin suspend function
+    // https://mmmnnnmmm.com/kotlin-kmm-swift-ios-suspend-functions.html
+//    class MySuspendFunction: KotlinSuspendFunction1 {
+//        func invoke(p1: Any?) async throws -> Any? {
+//            return "Please exclaim this remark"
+//        }
+//    }
+    
 	func load() {
-        greeting.onConnect { result, error in
-            print(result)
+        greeting.onWebSocket(host: "192.168.12.69", port: 8080, path: "/chat") {
+            return "aaa iOS"
+        } completionHandler: { result, error in
+            
         }
+
+//        greeting.onConnect { result, error in
+//            print(result)
+//        }
         greet += greeting.greeting() + "\n\n"
         greeting.getHtml { result, error in
             if let result = result {
