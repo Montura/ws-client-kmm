@@ -7,6 +7,9 @@ struct ContentView: View {
 	@State var greet = "Loading..."
 
 	func load() {
+        greeting.onConnect { result, error in
+            print(result)
+        }
         greet += greeting.greeting() + "\n\n"
         greeting.getHtml { result, error in
             if let result = result {
