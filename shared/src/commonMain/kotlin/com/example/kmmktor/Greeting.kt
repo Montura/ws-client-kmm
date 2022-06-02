@@ -20,8 +20,9 @@ class Greeting {
         val response = client.get("https://ktor.io/docs")
         return response.bodyAsText()
     }
+    // todo: use devex-mobile Wi-Fi both for server and for client!
     suspend fun onConnect() {
-        client.webSocket(method = HttpMethod.Get, host = "172.20.10.12", port = 8080, path = "/chat") {
+        client.webSocket(method = HttpMethod.Get, host = "192.168.12.69", port = 8080, path = "/chat") {
             while (true) {
                 val othersMessage = incoming.receive() as? Frame.Text ?: continue
                 println(othersMessage.readText())
