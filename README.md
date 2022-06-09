@@ -1,4 +1,4 @@
-# kmm-experiment
+# ws-client-kmm experiment
 Kotlin Mobile Multiplatform 
 
 # Ktor client in a Kotlin Multiplatform Mobile application
