@@ -9,4 +9,3 @@ pluginManagement {
 rootProject.name = "KmmKtor"
 //include(":androidApp")
 include(":shared")
-include(":server")
