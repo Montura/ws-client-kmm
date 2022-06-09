@@ -11,6 +11,7 @@ version = "1.0"
 kotlin {
 //    android()
 //    iosX64()
+    jvm()
     iosArm64()
 //    iosSimulatorArm64()
 
@@ -27,6 +28,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
+                implementation(kotlin("stdlib-jdk8"))
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.ktor:ktor-client-websockets:$ktorVersion")
@@ -37,6 +40,7 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
+        val jvmMain by getting
 //        val androidMain by getting {
 //            dependencies {
 //                implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
