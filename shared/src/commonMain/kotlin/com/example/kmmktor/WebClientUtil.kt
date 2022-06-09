@@ -4,6 +4,18 @@ import kotlin.reflect.KClass
 
 class WebClientUtil {
     companion object {
+        const val HOST: String = "localhost"
+        const val PORT: Int = 8080
+        const val PATH: String = "/dxfeed-webservice/cometd"
+
+        const val CHANNEL = "channel"
+        const val HANDSHAKE_CHANNEL = "/meta/handshake"
+        const val CONNECT_CHANNEL = "/meta/connect"
+        const val SUCCESSFUL = "successful"
+
+        val valueTypeForHashMapArray: KClass<out Array<HashMap<String, Any>>>
+                = (Array(0) { HashMap<String, Any>() })::class
+
         fun createHandshakeMessage(clientId: String?): String {
             val message: MutableMap<String, Any?> = HashMap()
             message["channel"] = "/meta/handshake"
@@ -32,12 +44,5 @@ class WebClientUtil {
             message["data"] = data
             return JsonUtil.toJson(listOf<Map<String, Any>>(message))
         }
-
-        const val HOST: String = "localhost"
-        const val PORT: Int = 8080
-        const val PATH: String = "/dxfeed-webservice/cometd"
-
-        val valueTypeForHashMapArray: KClass<out Array<HashMap<String, Any>>>
-            = (Array(0) { HashMap<String, Any>() })::class
     }
 }
