@@ -28,6 +28,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.7.0")
                 implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
                 implementation(kotlin("stdlib-jdk8"))
                 implementation("io.ktor:ktor-client-core:$ktorVersion")

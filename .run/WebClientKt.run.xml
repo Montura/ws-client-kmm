@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="WebClientKt" type="JetRunConfigurationType">
-    <option name="MAIN_CLASS_NAME" value="com.example.kmmktor.WebClientKtKt" />
+    <option name="MAIN_CLASS_NAME" value="com.example.kmmktor.WebClientKt" />
     <module name="ws-client-kmm.shared.jvmMain" />
     <shortenClasspath name="NONE" />
     <method v="2">
