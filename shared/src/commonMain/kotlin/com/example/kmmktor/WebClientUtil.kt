@@ -15,20 +15,21 @@ class WebClientUtil {
 
         const val HANDSHAKE_CHANNEL = "/meta/handshake"
         const val CONNECT_CHANNEL = "/meta/connect"
+        const val SERVICE_SUB_CHANNEL = "/service/sub"
 
         val valueTypeForHashMapArray: KClass<out Array<HashMap<String, Any>>>
                 = (Array(0) { HashMap<String, Any>() })::class
 
         fun createHandshakeMessage(clientId: String?): String {
             val message: MutableMap<String, Any?> = HashMap()
-            message[CHANNEL_KEY] = "/meta/handshake"
+            message[CHANNEL_KEY] = HANDSHAKE_CHANNEL
             message[CLIENT_KEY] = clientId
             return JsonUtil.toJson(listOf<Map<String, Any?>>(message))
         }
 
         fun createConnectMessage(clientId: String?): String {
             val message: MutableMap<String, Any?> = HashMap()
-            message[CHANNEL_KEY] = "/meta/connect"
+            message[CHANNEL_KEY] = CONNECT_CHANNEL
             message[CLIENT_KEY] = clientId
             message["connectionType"] = "websocket"
             return JsonUtil.toJson(listOf<Map<String, Any?>>(message))
@@ -36,7 +37,7 @@ class WebClientUtil {
 
         fun createSubscriptionMessage(clientId: String?, eventTypes: List<String>, symbols: List<String>): String {
             val message: MutableMap<String, Any> = HashMap()
-            message[CHANNEL_KEY] = "/service/sub"
+            message[CHANNEL_KEY] = SERVICE_SUB_CHANNEL
             message[CLIENT_KEY] = clientId!!
             val data: MutableMap<String, Any> = HashMap()
             val subMap: MutableMap<String, Collection<String>> = HashMap()

@@ -2,6 +2,7 @@ package com.example.kmmktor
 
 import com.example.kmmktor.WebClientUtil.Companion.CONNECT_CHANNEL
 import com.example.kmmktor.WebClientUtil.Companion.HANDSHAKE_CHANNEL
+import com.example.kmmktor.WebClientUtil.Companion.SERVICE_SUB_CHANNEL
 import com.example.kmmktor.WebClientUtil.Companion.SUCCESSFUL_KEY
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -14,29 +15,17 @@ import kotlinx.coroutines.*
 //  - wss://tools.dxfeed.com/webservice/cometd
 //  - ws://localhost:8080/dxfeed-webservice/cometd - Quote AAPL
 
-actual class CallbackHandler(webClient: WebClient) {
-    private var client: WebClient = webClient
-
-    actual suspend fun onMessage() {
-        println("USER_HANDLER: onMessage")
-        // todo: unique API for user {
-//        sendMessage { WebClientUtil.createSubscriptionMessage(clientId, listOf("Quote"), listOf("AAPL")) }
-//        sendMessage { WebClientUtil.createConnectMessage(clientId) }
-        // todo: }
-    }
-
-    suspend fun onSubscribe() {
-        println("USER_HANDLER: onHandshake")
-        client.connect(this)
-    }
-
-    suspend fun createSubscriptionMessage(eventTypes: List<String>, symbols: List<String>) {
-        client.subscribe(this, eventTypes, symbols)
-//        println("USER_HANDLER: createSubscriptionMessage")
+actual class CallbackHandler {
+    fun onSubscribe() {
+        println("USER_HANDLER: onSubscribe")
     }
 
     fun onConnect() {
-        println("USER_HANDLER: Hello from onConnect")
+        println("USER_HANDLER: onConnect")
+    }
+
+    fun onHandshake() {
+        println("USER_HANDLER: onHandshake")
     }
 }
 
@@ -51,7 +40,7 @@ actual class WebClient {
         }
     }
 
-    private val activeClients: MutableMap<CallbackHandler, String?> = HashMap()
+    private var clientCallbackHandler: CallbackHandler? = null
     private val activeEventTypes:  MutableMap<String, Set<String>> = HashMap()
     private val activeSymbols:  MutableMap<String, Set<String>> = HashMap()
 
@@ -68,50 +57,30 @@ actual class WebClient {
             )
             {
                 session = this
+                this@WebClient.clientCallbackHandler = clientCallbackHandler
                 sendMessage { WebClientUtil.createHandshakeMessage(clientId) }
                 runConnectionUpdater()                 // Start heartbeat
-//
-                val messageOutputRoutine = launch { outputMessages(clientCallbackHandler) }
-                val userInputRoutine = launch { inputMessages() }
 
-                userInputRoutine.join() // Wait for completion; either "exit" or error
-                messageOutputRoutine.cancelAndJoin()
+                while (true) {
+                    val incomingMsg = incoming.receive() as? Frame.Text ?: continue
+                    onMessage(incomingMsg.readText())
+                }
             }
         }
         println("Client closed. Goodbye!")
         clientKt.close()
     }
 
-    suspend fun subscribe(handler: CallbackHandler, eventTypes: List<String>, symbols: List<String>) {
-        val clientId = activeClients[handler]
+    suspend fun subscribe(eventTypes: List<String>, symbols: List<String>) {
         clientId?.let {
             val currEventTypes = activeEventTypes[it]
             val currSymbols = activeSymbols[it]
-            // todo: add eventTypes and symbols if not null
+//            todo:  add eventTypes and symbols if not null
             if (currEventTypes == null && currSymbols == null) {
                 sendMessage { WebClientUtil.createConnectMessage(it) }
                 sendMessage { WebClientUtil.createSubscriptionMessage(it, eventTypes, symbols) }
                 activeEventTypes[it] = eventTypes.toHashSet()
                 activeSymbols[it] = eventTypes.toHashSet()
-            }
-        }
-    }
-
-    suspend fun connect(handler: CallbackHandler) {
-        val clientId = activeClients[handler]
-        clientId?.let {
-            sendMessage { WebClientUtil.createConnectMessage(it) }
-        }
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
-    private suspend fun runConnectionUpdater() {
-        GlobalScope.launch (Dispatchers.Default) {
-            delay(8000)
-            while (true) {
-                val heartbeatMessage: String = sendHeartbeat(session)
-                println("HEARTBEAT: $heartbeatMessage")
-                delay(20000)
             }
         }
     }
@@ -122,38 +91,24 @@ actual class WebClient {
         return connectMessage
     }
 
-    private suspend fun DefaultClientWebSocketSession.outputMessages(clientCallbackHandler: CallbackHandler) {
+    private suspend fun sendMessage(messageSupplier: () -> String) {
         try {
-            for (message in incoming) {
-                message as? Frame.Text ?: continue
-                onMessage(message.readText(), clientCallbackHandler)
-            }
-        } catch (e: Exception) {
-            println("Error while receiving: " + e.localizedMessage)
+            val message = messageSupplier.invoke()
+            println("SEND: $message")
+            session!!.send(message)
+        } catch (t: Throwable) {
+            println(t)
         }
     }
 
-    private suspend fun DefaultClientWebSocketSession.inputMessages() {
-        while (true) {
-            val message = readLine() ?: ""
-            if (message.equals("exit", true)) return
-            try {
-                send(message)
-            } catch (e: Exception) {
-                println("Error while sending: " + e.localizedMessage)
-                return
-            }
-        }
-    }
-
-    private suspend fun onMessage(msg: String, clientCallbackHandler: CallbackHandler) {
+    private fun onMessage(msg: String) {
         val json: HashMap<String, Any> = JsonUtil.fromJson(msg, WebClientUtil.valueTypeForHashMapArray)[0]
         if (clientId == null ) {
             println("RECV: $msg")
             when (json.channel()) {
                 HANDSHAKE_CHANNEL -> {
                     if (onHandshake(json)) {
-                        activeClients[clientCallbackHandler] = clientId
+                        clientCallbackHandler?.onHandshake()
                     }
                 }
                 null -> println("Unknown channel")
@@ -164,7 +119,10 @@ actual class WebClient {
             when (json.channel()) {
                 CONNECT_CHANNEL -> {
                     onConnect(json)
-                    clientCallbackHandler.onConnect()
+                    clientCallbackHandler?.onConnect()
+                }
+                SERVICE_SUB_CHANNEL -> {
+                    clientCallbackHandler?.onSubscribe()
                 }
                 null -> println("Unknown channel")
             }
@@ -194,18 +152,16 @@ actual class WebClient {
         return success
     }
 
-    private suspend fun sendMessage(messageSupplier: () -> String) {
-        try {
-            val message = messageSupplier.invoke()
-            println("SEND: $message")
-            session!!.send(message)
-        } catch (t: Throwable) {
-            println(t)
+    @OptIn(DelicateCoroutinesApi::class)
+    private suspend fun runConnectionUpdater() {
+        GlobalScope.launch (Dispatchers.Default) {
+            delay(8000)
+            while (true) {
+                val heartbeatMessage: String = sendHeartbeat(session)
+                println("HEARTBEAT: $heartbeatMessage")
+                delay(20000)
+            }
         }
-    }
-
-    fun isReady(): Boolean {
-        return clientId != null
     }
 }
 
@@ -214,7 +170,7 @@ fun main() {
     println("Run WebClientKt ...")
 
     val webClient = WebClient()
-    val clientCallbackHandler = CallbackHandler(webClient)
+    val clientCallbackHandler = CallbackHandler()
 
     GlobalScope.launch(Dispatchers.Default) {
         webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH, clientCallbackHandler)
@@ -222,7 +178,7 @@ fun main() {
 
     runBlocking {
         while (true) {
-            clientCallbackHandler.createSubscriptionMessage(listOf("Quote"), listOf("AAPL"))
+            webClient.subscribe(listOf("Quote"), listOf("AAPL"))
         }
     }
 
