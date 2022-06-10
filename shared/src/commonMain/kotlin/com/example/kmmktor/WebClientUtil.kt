@@ -4,37 +4,40 @@ import kotlin.reflect.KClass
 
 class WebClientUtil {
     companion object {
-        const val HOST: String = "localhost"
-        const val PORT: Int = 8080
-        const val PATH: String = "/dxfeed-webservice/cometd"
+        // wss://tools.dxfeed.com/webservice/cometd
+        const val HOST: String = "tools.dxfeed.com"
+        val PORT: Int? = null
+        const val PATH: String = "/webservice/cometd"
 
-        const val CHANNEL = "channel"
+        const val CHANNEL_KEY = "channel"
+        const val CLIENT_KEY = "clientId"
+        const val SUCCESSFUL_KEY = "successful"
+
         const val HANDSHAKE_CHANNEL = "/meta/handshake"
         const val CONNECT_CHANNEL = "/meta/connect"
-        const val SUCCESSFUL = "successful"
 
         val valueTypeForHashMapArray: KClass<out Array<HashMap<String, Any>>>
                 = (Array(0) { HashMap<String, Any>() })::class
 
         fun createHandshakeMessage(clientId: String?): String {
             val message: MutableMap<String, Any?> = HashMap()
-            message["channel"] = "/meta/handshake"
-            message["clientId"] = clientId
+            message[CHANNEL_KEY] = "/meta/handshake"
+            message[CLIENT_KEY] = clientId
             return JsonUtil.toJson(listOf<Map<String, Any?>>(message))
         }
 
         fun createConnectMessage(clientId: String?): String {
             val message: MutableMap<String, Any?> = HashMap()
-            message["channel"] = "/meta/connect"
-            message["clientId"] = clientId
+            message[CHANNEL_KEY] = "/meta/connect"
+            message[CLIENT_KEY] = clientId
             message["connectionType"] = "websocket"
             return JsonUtil.toJson(listOf<Map<String, Any?>>(message))
         }
 
         fun createSubscriptionMessage(clientId: String?, eventTypes: List<String>, symbols: List<String>): String {
             val message: MutableMap<String, Any> = HashMap()
-            message["channel"] = "/service/sub"
-            message["clientId"] = clientId!!
+            message[CHANNEL_KEY] = "/service/sub"
+            message[CLIENT_KEY] = clientId!!
             val data: MutableMap<String, Any> = HashMap()
             val subMap: MutableMap<String, Collection<String>> = HashMap()
             eventTypes.forEach { type: String ->

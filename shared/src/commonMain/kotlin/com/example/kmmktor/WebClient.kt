@@ -1,10 +1,11 @@
 package com.example.kmmktor
 
-import io.ktor.client.*
-import io.ktor.websocket.*
-
+expect class CallbackHandler {
+    suspend fun onMessage()
+}
 expect class WebClient {
-    var session: WebSocketSession?
-    var clientId: String?
-    val clientKt: HttpClient
+    fun run(
+        host: String, port: Int? = null, path: String? = null,
+        clientCallbackHandler: CallbackHandler
+    )
 }
