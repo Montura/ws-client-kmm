@@ -3,6 +3,7 @@ val ktorVersion: String by project
 plugins {
     kotlin("multiplatform")
     kotlin("native.cocoapods")
+    kotlin("plugin.serialization") version "1.6.21"
 //    id("com.android.library")
 }
 
@@ -31,12 +32,13 @@ kotlin {
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.ktor:ktor-client-websockets:$ktorVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+//                implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
             }
         }
         val jvmMain by getting {
             dependencies {
                 runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.7.0")
-                implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
                 implementation(kotlin("stdlib-jdk8"))
             }
         }

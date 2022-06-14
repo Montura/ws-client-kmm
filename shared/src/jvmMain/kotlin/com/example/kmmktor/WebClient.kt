@@ -101,7 +101,7 @@ actual class WebClient {
         }
     }
 
-    fun onData(json: java.util.HashMap<String, Any>) {
+    fun onData(json: java.util.HashMap<String, Any?>) {
         logWithThreadName("USER_HANDLER: todo -> process data")
     }
 
@@ -111,7 +111,7 @@ actual class WebClient {
     }
 
     private suspend fun processIncomingMessage(msg: String) {
-        val json: HashMap<String, Any> = JsonUtil.fromJson(msg, WebClientUtil.valueTypeForHashMapArray)[0]
+        val json: HashMap<String, Any?> = JsonUtil.fromJson(msg)
         logWithThreadName("RECV: $msg")
         when (val channel = json.channel()) {
             HANDSHAKE_CHANNEL -> {
@@ -133,7 +133,7 @@ actual class WebClient {
         }
     }
 
-    private fun onHandshake(map: HashMap<String, Any>): Boolean {
+    private fun onHandshake(map: HashMap<String, Any?>): Boolean {
         val success = map.booleanValue(SUCCESSFUL_KEY)
         if (success) {
             if (clientId != null) {

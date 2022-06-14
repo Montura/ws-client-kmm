@@ -22,22 +22,22 @@ class WebClientUtil {
                 = (Array(0) { HashMap<String, Any>() })::class
 
         fun createHandshakeMessage(clientId: String?): String {
-            val message: MutableMap<String, Any?> = HashMap()
+            val message: HashMap<String, Any?> = HashMap()
             message[CHANNEL_KEY] = HANDSHAKE_CHANNEL
             message[CLIENT_KEY] = clientId
-            return JsonUtil.toJson(listOf<Map<String, Any?>>(message))
+            return JsonUtil.toJson(listOf(message))
         }
 
         fun createConnectMessage(clientId: String?): String {
-            val message: MutableMap<String, Any?> = HashMap()
+            val message: HashMap<String, Any?> = HashMap()
             message[CHANNEL_KEY] = CONNECT_CHANNEL
             message[CLIENT_KEY] = clientId
             message["connectionType"] = "websocket"
-            return JsonUtil.toJson(listOf<Map<String, Any?>>(message))
+            return JsonUtil.toJson(listOf(message))
         }
 
         fun createSubscriptionMessage(clientId: String?, eventTypes: List<String>, symbols: List<String>): String {
-            val message: MutableMap<String, Any> = HashMap()
+            val message: HashMap<String, Any?> = HashMap()
             message[CHANNEL_KEY] = SERVICE_SUB_CHANNEL
             message[CLIENT_KEY] = clientId!!
             val data: MutableMap<String, Any> = HashMap()
@@ -47,7 +47,7 @@ class WebClientUtil {
             }
             data["add"] = subMap
             message["data"] = data
-            return JsonUtil.toJson(listOf<Map<String, Any>>(message))
+            return JsonUtil.toJson(listOf(message))
         }
     }
 }

@@ -2,14 +2,14 @@ package com.example.kmmktor
 
 import kotlin.reflect.KClass
 
-fun HashMap<String, Any>.value(channelAsKey: String): Any? = this[channelAsKey]
+fun HashMap<String, Any?>?.value(channelAsKey: String): Any? = this?.get(channelAsKey)
 
-fun HashMap<String, Any>.booleanValue(channelAsKey: String): Boolean = this[channelAsKey]?.let { it as Boolean } ?: false
-fun HashMap<String, Any>.channel(): String? = this[WebClientUtil.CHANNEL_KEY] as? String
+fun HashMap<String, Any?>?.booleanValue(channelAsKey: String): Boolean = this?.get(channelAsKey)?.let { it as String == "true" } ?: false
+fun HashMap<String, Any?>?.channel(): String = this?.run { this[WebClientUtil.CHANNEL_KEY] as? String } ?: "null"
 
 expect class JsonUtil {
     companion object {
-        fun toJson(value: Any?): String
-        fun <T : Any> fromJson(value: String?, valueType: KClass<T>): T
+        fun toJson(value: List<HashMap<String, Any?>>): String
+        fun fromJson(value: String): HashMap<String, Any?>
     }
 }
