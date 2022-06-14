@@ -2,6 +2,7 @@ package com.example.kmmktor
 
 import com.example.kmmktor.WebClientUtil.Companion.CONNECT_CHANNEL
 import com.example.kmmktor.WebClientUtil.Companion.HANDSHAKE_CHANNEL
+import com.example.kmmktor.WebClientUtil.Companion.SERVICE_DATA_CHANNEL
 import com.example.kmmktor.WebClientUtil.Companion.SERVICE_SUB_CHANNEL
 import com.example.kmmktor.WebClientUtil.Companion.SUCCESSFUL_KEY
 import io.ktor.client.*
@@ -19,14 +20,15 @@ actual class CallbackHandler {
     fun onSubscribe() {
         println("USER_HANDLER: onSubscribe")
     }
+}
 
-    fun onConnect() {
-        println("USER_HANDLER: onConnect")
-    }
+// OnWebSocketClose   -> log("Client closed: " + statusCode + " - " + reason);  this.session = null;
+// OnWebSocketConnect -> First connection + send handshake
+// OnWebSocketMessage -> Handshake
+// OnWebSocketError   -> log
 
-    fun onHandshake() {
-        println("USER_HANDLER: onHandshake")
-    }
+fun logWithThreadName(msg: String?) {
+    println("[${Thread.currentThread().name}]: $msg")
 }
 
 actual class WebClient {
@@ -40,116 +42,133 @@ actual class WebClient {
         }
     }
 
-    private var clientCallbackHandler: CallbackHandler? = null
-    private val activeEventTypes:  MutableMap<String, Set<String>> = HashMap()
-    private val activeSymbols:  MutableMap<String, Set<String>> = HashMap()
-
-    actual fun run(
-        host: String, port: Int?, path: String?,
-        clientCallbackHandler: CallbackHandler
-    ) {
+    actual fun run(host: String, port: Int?, path: String?) {
         runBlocking {
-            clientKt.webSocket(
-                method = HttpMethod.Get,
-                host = host,
-                port = port,
-                path = path
-            )
-            {
-                session = this
-                this@WebClient.clientCallbackHandler = clientCallbackHandler
-                sendMessage { WebClientUtil.createHandshakeMessage(clientId) }
-                runConnectionUpdater()                 // Start heartbeat
+            try {
+                clientKt.webSocket(
+                    method = HttpMethod.Get,
+                    host = host,
+                    port = port,
+                    path = path
+                )
+                {
+                    session = this
+                    onWebSocketOpen()
 
-                while (true) {
-                    val incomingMsg = incoming.receive() as? Frame.Text ?: continue
-                    onMessage(incomingMsg.readText())
+                    while (true) {
+                        try {
+                            val incomingMsg = incoming.receive() as? Frame.Text ?: continue
+                            processIncomingMessage(incomingMsg.readText())
+                        } catch (e: Exception) {
+                            println("Error while receiving: " + e.localizedMessage)
+                            break
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                println("Error while opening web-socket: " + e.localizedMessage)
             }
         }
-        println("Client closed. Goodbye!")
+        logWithThreadName("Client closed. Goodbye!")
         clientKt.close()
     }
 
-    suspend fun subscribe(eventTypes: List<String>, symbols: List<String>) {
-        clientId?.let {
-            val currEventTypes = activeEventTypes[it]
-            val currSymbols = activeSymbols[it]
-//            todo:  add eventTypes and symbols if not null
-            if (currEventTypes == null && currSymbols == null) {
-                sendMessage { WebClientUtil.createConnectMessage(it) }
-                sendMessage { WebClientUtil.createSubscriptionMessage(it, eventTypes, symbols) }
-                activeEventTypes[it] = eventTypes.toHashSet()
-                activeSymbols[it] = eventTypes.toHashSet()
+    suspend fun onWebSocketOpen(success: Boolean) {
+        if (success) {
+            logWithThreadName("\tHandshake is established!")
+            sendMessage { WebClientUtil.createConnectMessage(clientId) }
+            sendMessage { WebClientUtil.createSubscriptionMessage(clientId, listOf("Quote"), listOf("AAPL")) }
+        } else {
+            logWithThreadName("\tCan't establish a handshake")
+        }
+    }
+
+    fun onWebSocketConnect(success: Boolean) {
+        logWithThreadName("USER_HANDLER:")
+        if (success) {
+            logWithThreadName("\tConnection is established!")
+        } else {
+            logWithThreadName("\tCan't establish a connection!")
+        }
+    }
+
+    fun onSubscribe(success: Boolean) {
+        logWithThreadName("USER_HANDLER:")
+        if (success) {
+            logWithThreadName("\tConnection is established!")
+        } else {
+            logWithThreadName("\tCan't establish a connection!")
+        }
+    }
+
+    fun onData(json: java.util.HashMap<String, Any>) {
+        logWithThreadName("USER_HANDLER: todo -> process data")
+    }
+
+    private suspend fun onWebSocketOpen() {
+        sendMessage { WebClientUtil.createHandshakeMessage(clientId) }
+        runConnectionUpdater()                 // Start heartbeat
+    }
+
+    private suspend fun processIncomingMessage(msg: String) {
+        val json: HashMap<String, Any> = JsonUtil.fromJson(msg, WebClientUtil.valueTypeForHashMapArray)[0]
+        logWithThreadName("RECV: $msg")
+        when (val channel = json.channel()) {
+            HANDSHAKE_CHANNEL -> {
+                val success = onHandshake(json)
+                onWebSocketOpen(success)
+            }
+            CONNECT_CHANNEL -> {
+                onWebSocketConnect(json.booleanValue(SUCCESSFUL_KEY))
+            }
+            SERVICE_SUB_CHANNEL -> {
+                onSubscribe(json.booleanValue(SUCCESSFUL_KEY))
+            }
+            SERVICE_DATA_CHANNEL -> {
+                onData(json)
+            }
+            else -> {
+                logWithThreadName("Unknown channel: $channel")
             }
         }
     }
 
-    private suspend fun sendHeartbeat(session: WebSocketSession?): String {
-        val connectMessage = WebClientUtil.createConnectMessage(clientId)
-        session?.send(connectMessage)
-        return connectMessage
+    private fun onHandshake(map: HashMap<String, Any>): Boolean {
+        val success = map.booleanValue(SUCCESSFUL_KEY)
+        if (success) {
+            if (clientId != null) {
+                throw IllegalStateException("Reassigning clientId!")
+            }
+            clientId = map["clientId"] as String?
+        } else {
+            try {
+                clientKt.close()
+            } catch (e: Exception) {
+                logWithThreadName(e.localizedMessage)
+            }
+        }
+        return success
     }
 
     private suspend fun sendMessage(messageSupplier: () -> String) {
         try {
             val message = messageSupplier.invoke()
-            println("SEND: $message")
+            logWithThreadName("SEND: $message")
             session!!.send(message)
         } catch (t: Throwable) {
-            println(t)
+            logWithThreadName("Error while sending: " + t.message)
         }
     }
 
-    private fun onMessage(msg: String) {
-        val json: HashMap<String, Any> = JsonUtil.fromJson(msg, WebClientUtil.valueTypeForHashMapArray)[0]
-        if (clientId == null ) {
-            println("RECV: $msg")
-            when (json.channel()) {
-                HANDSHAKE_CHANNEL -> {
-                    if (onHandshake(json)) {
-                        clientCallbackHandler?.onHandshake()
-                    }
-                }
-                null -> println("Unknown channel")
-            }
-        } else {
-//            json.remove(CLIENT_KEY)
-            println("RECV: $msg")
-            when (json.channel()) {
-                CONNECT_CHANNEL -> {
-                    onConnect(json)
-                    clientCallbackHandler?.onConnect()
-                }
-                SERVICE_SUB_CHANNEL -> {
-                    clientCallbackHandler?.onSubscribe()
-                }
-                null -> println("Unknown channel")
-            }
+    private suspend fun sendHeartbeat(): String? {
+        return try {
+            val connectMessage = WebClientUtil.createConnectMessage(clientId)
+            session?.send(connectMessage)
+            connectMessage
+        } catch (t: Throwable) {
+            logWithThreadName("Error while sending: " + t.message)
+            null
         }
-    }
-
-    private fun onConnect(json: HashMap<String, Any>) {
-        if (json.value(SUCCESSFUL_KEY) == true) {
-            println("Connection is established!")
-        } else {
-            println("Connection isn't established!")
-        }
-    }
-
-    private fun onHandshake(map: HashMap<String, Any>): Boolean {
-        val success = map.value(SUCCESSFUL_KEY) as Boolean
-        if (success) {
-            println("\tHandshake completed")
-            clientId = map["clientId"] as String?
-        } else {
-            println("\tCan't establish a handshake")
-            try {
-                clientKt.close()
-            } catch (ignored: Exception) { }
-            //todo: processExit?
-        }
-        return success
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -157,9 +176,11 @@ actual class WebClient {
         GlobalScope.launch (Dispatchers.Default) {
             delay(8000)
             while (true) {
-                val heartbeatMessage: String = sendHeartbeat(session)
-                println("HEARTBEAT: $heartbeatMessage")
-                delay(20000)
+                val heartbeatMessage: String? = sendHeartbeat()
+                heartbeatMessage?.let {
+                    logWithThreadName("HEARTBEAT: $heartbeatMessage")
+                    delay(20000)
+                } ?: break
             }
         }
     }
@@ -167,19 +188,13 @@ actual class WebClient {
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() {
-    println("Run WebClientKt ...")
+    logWithThreadName("Run WebClientKt ...")
 
     val webClient = WebClient()
-    val clientCallbackHandler = CallbackHandler()
 
     GlobalScope.launch(Dispatchers.Default) {
-        webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH, clientCallbackHandler)
+        webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
     }
 
-    runBlocking {
-        while (true) {
-            webClient.subscribe(listOf("Quote"), listOf("AAPL"))
-        }
-    }
-
+    while (true) {}
 }

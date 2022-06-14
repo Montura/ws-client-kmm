@@ -3,6 +3,8 @@ package com.example.kmmktor
 import kotlin.reflect.KClass
 
 fun HashMap<String, Any>.value(channelAsKey: String): Any? = this[channelAsKey]
+
+fun HashMap<String, Any>.booleanValue(channelAsKey: String): Boolean = this[channelAsKey]?.let { it as Boolean } ?: false
 fun HashMap<String, Any>.channel(): String? = this[WebClientUtil.CHANNEL_KEY] as? String
 
 expect class JsonUtil {

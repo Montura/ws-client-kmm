@@ -16,6 +16,7 @@ class WebClientUtil {
         const val HANDSHAKE_CHANNEL = "/meta/handshake"
         const val CONNECT_CHANNEL = "/meta/connect"
         const val SERVICE_SUB_CHANNEL = "/service/sub"
+        const val SERVICE_DATA_CHANNEL = "/service/data"
 
         val valueTypeForHashMapArray: KClass<out Array<HashMap<String, Any>>>
                 = (Array(0) { HashMap<String, Any>() })::class
