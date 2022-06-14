@@ -13,7 +13,7 @@ kotlin {
 //    android()
 //    iosX64()
     jvm()
-//    iosArm64()
+    iosArm64()
 //    iosSimulatorArm64()
 
     cocoapods {
@@ -49,18 +49,17 @@ kotlin {
 //        }
 //        val androidTest by getting
 //        val iosX64Main by getting
-//        val iosArm64Main by getting
+        val iosArm64Main by getting
 //        val iosSimulatorArm64Main by getting
-//        val iosMain by creating {
-//            dependsOn(commonMain)
+        val iosMain by creating {
+            dependsOn(commonMain)
 ////            iosX64Main.dependsOn(this)
-//            iosArm64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
 ////            iosSimulatorArm64Main.dependsOn(this)
-//            dependencies {
-//                implementation("io.ktor:ktor-client-core:$ktorVersion")
-//                implementation("io.ktor:ktor-client-darwin:$ktorVersion")
-//            }
-//        }
+            dependencies {
+                implementation("io.ktor:ktor-client-core:$ktorVersion")
+            }
+        }
     }
 }
 
