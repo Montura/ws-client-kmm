@@ -1,7 +1,6 @@
 package com.example.kmmktor
 
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.websocket.*
@@ -11,16 +10,12 @@ expect class CallbackHandler
 
 expect fun logWithThreadName(msg: String?)
 
-class WebClient {
+expect fun httpClient(): HttpClient
+
+class WebClient(private val clientKt: HttpClient, ) {
     private var session: WebSocketSession? = null
     private var clientId: String? = null
 
-    private val clientKt: HttpClient = HttpClient(CIO) {
-        install(WebSockets)
-        engine {
-            requestTimeout = 0
-        }
-    }
     fun run(host: String, port: Int?, path: String?) {
         runBlocking {
             try {

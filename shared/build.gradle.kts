@@ -30,7 +30,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
-                implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.ktor:ktor-client-websockets:$ktorVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
 //                implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
@@ -38,6 +37,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
+                implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.7.0")
                 implementation(kotlin("stdlib-jdk8"))
             }
@@ -57,6 +57,7 @@ kotlin {
             iosArm64Main.dependsOn(this)
 ////            iosSimulatorArm64Main.dependsOn(this)
             dependencies {
+                implementation("io.ktor:ktor-client-darwin:$ktorVersion")
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
             }
         }

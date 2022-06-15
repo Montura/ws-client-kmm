@@ -1,5 +1,8 @@
 package com.example.kmmktor
 
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.websocket.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -12,6 +15,15 @@ import kotlinx.coroutines.launch
 actual class CallbackHandler {
     fun onSubscribe() {
         println("USER_HANDLER: onSubscribe")
+    }
+}
+
+actual fun httpClient(): HttpClient {
+    return HttpClient(CIO) {
+        install(WebSockets)
+        engine {
+            requestTimeout = 0
+        }
     }
 }
 
@@ -28,7 +40,7 @@ actual fun logWithThreadName(msg: String?) {
 fun main() {
     logWithThreadName("Run WebClientKt ...")
 
-    val webClient = WebClient()
+    val webClient = WebClient(httpClient())
 
     GlobalScope.launch(Dispatchers.Default) {
         webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)

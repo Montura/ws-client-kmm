@@ -3,7 +3,7 @@ import shared
 
 struct ContentView: View {
 	let greeting = Greeting()
-    let client = WebClient()
+    let client = WebClient(clientKt: WebClientKt.httpClient())
     
 	@State var greet = "Loading..."
 
@@ -16,7 +16,8 @@ struct ContentView: View {
 //    }
     
 	func load() {
-        client.run(host: "192.168.12.133", port: 8080, path: "/dxfeed-webservice/cometd")
+        
+        client.run(host: "tools.dxfeed.com", port: 0, path: "/webservice/cometd")
         
         
 //        greeting.onWebSocket(host: "192.168.12.69", port: 8080, path: "/chat") {

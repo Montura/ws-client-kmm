@@ -32,7 +32,6 @@ class WebClientUtil {
             val message: HashMap<String, Any?> = HashMap()
             message[CHANNEL_KEY] = CONNECT_CHANNEL
             message[CLIENT_KEY] = clientId
-            message["connectionType"] = "websocket"
             return JsonUtil.toJson(listOf(message))
         }
 
