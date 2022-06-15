@@ -1,6 +1,62 @@
 import SwiftUI
 import shared
 
+class IosWsEventListener : WsEventHandler {
+    var client: WebClient? = nil
+    
+    private func onWebSocketOpen() async throws {
+        try await client?.sendMessage(messageSupplier: { clientId in
+            WebClientUtil.companion.createConnectMessage(clientId: clientId)
+        })
+
+        try await client?.sendMessage(messageSupplier: { clientId in
+            WebClientUtil.companion.createSubscriptionMessage(clientId: clientId, eventTypes: ["Quote"], symbols: ["AAPL"])
+        })
+   }
+
+   private func onWebSocketConnect(success: Bool) {
+       WebClientKt.logWithThreadName(msg: "USER_HANDLER:")
+       if (success) {
+           WebClientKt.logWithThreadName(msg: "\tConnection is established!")
+       } else {
+           WebClientKt.logWithThreadName(msg: "\tCan't establish a connection!")
+       }
+   }
+
+   private func onSubscribe(success: Bool) {
+       WebClientKt.logWithThreadName(msg: "USER_HANDLER:")
+       if (success) {
+           WebClientKt.logWithThreadName(msg: "\tConnection is established!")
+       } else {
+           WebClientKt.logWithThreadName(msg: "\tCan't establish a connection!")
+       }
+   }
+
+   private func onData(json: KotlinMutableDictionary<NSString, AnyObject>) {
+       WebClientKt.logWithThreadName(msg: "USER_HANDLER: todo -> process data")
+   }
+    
+    func processIncomingMessage(client: WebClient, msg: String, json: KotlinMutableDictionary<NSString, AnyObject>) async throws -> KotlinUnit {
+        self.client = client
+        WebClientKt.logWithThreadName(msg: "RECV: $msg")
+        
+        let channel = JsonUtilKt.channel(json)
+        switch (channel) {
+        case WebClientUtil.companion.HANDSHAKE_CHANNEL:
+            try await onWebSocketOpen()
+        case WebClientUtil.companion.CONNECT_CHANNEL:
+            onWebSocketConnect(success: JsonUtilKt.booleanValue(json, channelAsKey: WebClientUtil.companion.SUCCESSFUL_KEY))
+        case WebClientUtil.companion.SERVICE_SUB_CHANNEL:
+            onSubscribe(success: JsonUtilKt.booleanValue(json, channelAsKey: WebClientUtil.companion.SUCCESSFUL_KEY))
+        case WebClientUtil.companion.SERVICE_DATA_CHANNEL:
+            onData(json: json)
+        default:
+            WebClientKt.logWithThreadName(msg: "Unkwon channel: " + channel)
+        }
+        return KotlinUnit()
+    }
+}
+
 struct ContentView: View {
 	let greeting = Greeting()
     let client = WebClient(clientKt: WebClientKt.httpClient())
@@ -16,8 +72,9 @@ struct ContentView: View {
 //    }
     
 	func load() {
+        let listener = IosWsEventListener();
         
-        client.run(host: "tools.dxfeed.com", port: 0, path: "/webservice/cometd")
+        client.run(host: "tools.dxfeed.com", port: 0, path: "/webservice/cometd", userListener: listener)
         
         
 //        greeting.onWebSocket(host: "192.168.12.69", port: 8080, path: "/chat") {

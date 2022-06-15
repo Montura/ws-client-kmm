@@ -32,13 +32,11 @@ kotlin {
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-websockets:$ktorVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-//                implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
             }
         }
         val jvmMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-cio:$ktorVersion")
-                runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.7.0")
                 implementation(kotlin("stdlib-jdk8"))
             }
         }

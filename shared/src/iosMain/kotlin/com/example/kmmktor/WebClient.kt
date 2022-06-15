@@ -41,13 +41,5 @@ actual fun logWithThreadName(msg: String?) {
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() {
-    logWithThreadName("Run WebClientKt ...")
-
-    val webClient = WebClient(httpClient())
-
-    GlobalScope.launch(Dispatchers.Default) {
-        webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
-    }
-
-    while (true) {}
+    logWithThreadName("Run iOS WebClientKt ...")
 }
