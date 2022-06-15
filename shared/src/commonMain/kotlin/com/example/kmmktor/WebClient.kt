@@ -12,7 +12,7 @@ expect fun logWithThreadName(msg: String?)
 
 expect fun httpClient(): HttpClient
 
-class WebClient(private val clientKt: HttpClient, ) {
+class WebClient(private val clientKt: HttpClient) {
     private var session: WebSocketSession? = null
     private var clientId: String? = null
 
