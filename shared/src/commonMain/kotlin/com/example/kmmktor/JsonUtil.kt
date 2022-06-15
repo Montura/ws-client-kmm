@@ -1,6 +1,7 @@
 package com.example.kmmktor
 
 //import com.fasterxml.jackson.databind.ObjectMapper
+import io.ktor.http.content.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -13,7 +14,8 @@ import kotlinx.serialization.json.*
 fun HashMap<String, Any?>?.value(channelAsKey: String): Any? = this?.get(channelAsKey)
 
 fun HashMap<String, Any?>?.booleanValue(channelAsKey: String): Boolean = this?.get(channelAsKey)?.let { it as String == "true" } ?: false
-fun HashMap<String, Any?>?.channel(): String = this?.run { this[WebClientUtil.CHANNEL_KEY] as? String } ?: "null"
+fun HashMap<String, Any?>?.channel(): String =
+    this?.run { this[WebClientUtil.CHANNEL_KEY] as? String } ?: WebClientUtil.EMPTY_CHANNEL_KEY
 
 class JsonUtil {
 

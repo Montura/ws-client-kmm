@@ -41,9 +41,10 @@ fun main() {
     logWithThreadName("Run WebClientKt ...")
 
     val webClient = WebClient(httpClient())
+    val listener = JvmWsEventHandler()
 
     GlobalScope.launch(Dispatchers.Default) {
-        webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
+        webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH, listener)
     }
 
     while (true) {}

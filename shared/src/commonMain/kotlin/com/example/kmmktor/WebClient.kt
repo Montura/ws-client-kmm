@@ -12,52 +12,18 @@ expect fun logWithThreadName(msg: String?)
 
 expect fun httpClient(): HttpClient
 
-class WebClient(private val clientKt: HttpClient) {
-    private var session: WebSocketSession? = null
-    private var clientId: String? = null
+interface WsEventHandler {
+    suspend fun processIncomingMessage(client: WebClient, msg: String, json: HashMap<String, Any?>)
+}
 
-    fun run(host: String, port: Int?, path: String?) {
-        runBlocking {
-            try {
-                clientKt.webSocket(
-                    method = HttpMethod.Get,
-                    host = host,
-                    port = port,
-                    path = path
-                )
-                {
-                    session = this
-                    onWebSocketOpen()
-
-                    while (true) {
-                        try {
-                            val incomingMsg = incoming.receive() as? Frame.Text ?: continue
-                            processIncomingMessage(incomingMsg.readText())
-                        } catch (e: Exception) {
-                            println("Error while receiving: " + e.message)
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                println("Error while opening web-socket: " + e.message)
-            }
-        }
-        logWithThreadName("Client closed. Goodbye!")
-        clientKt.close()
+class JvmWsEventHandler : WsEventHandler {
+    private var client: WebClient? = null
+    private suspend fun onWebSocketOpen() {
+        client?.sendMessage { clientId -> WebClientUtil.createConnectMessage(clientId) }
+        client?.sendMessage { clientId -> WebClientUtil.createSubscriptionMessage(clientId, listOf("Quote"), listOf("AAPL")) }
     }
 
-    suspend fun onWebSocketOpen(success: Boolean) {
-        if (success) {
-            logWithThreadName("\tHandshake is established!")
-            sendMessage { WebClientUtil.createConnectMessage(clientId) }
-            sendMessage { WebClientUtil.createSubscriptionMessage(clientId, listOf("Quote"), listOf("AAPL")) }
-        } else {
-            logWithThreadName("\tCan't establish a handshake")
-        }
-    }
-
-    fun onWebSocketConnect(success: Boolean) {
+    private fun onWebSocketConnect(success: Boolean) {
         logWithThreadName("USER_HANDLER:")
         if (success) {
             logWithThreadName("\tConnection is established!")
@@ -66,7 +32,7 @@ class WebClient(private val clientKt: HttpClient) {
         }
     }
 
-    fun onSubscribe(success: Boolean) {
+    private fun onSubscribe(success: Boolean) {
         logWithThreadName("USER_HANDLER:")
         if (success) {
             logWithThreadName("\tConnection is established!")
@@ -75,22 +41,16 @@ class WebClient(private val clientKt: HttpClient) {
         }
     }
 
-    fun onData(json: HashMap<String, Any?>) {
+    private fun onData(json: HashMap<String, Any?>) {
         logWithThreadName("USER_HANDLER: todo -> process data")
     }
 
-    private suspend fun onWebSocketOpen() {
-        sendMessage { WebClientUtil.createHandshakeMessage(clientId) }
-        runConnectionUpdater()                 // Start heartbeat
-    }
-
-    private suspend fun processIncomingMessage(msg: String) {
-        val json: HashMap<String, Any?> = JsonUtil.fromJson(msg)
+    override suspend fun processIncomingMessage(client: WebClient, msg: String, json: HashMap<String, Any?>) {
+        this.client = client
         logWithThreadName("RECV: $msg")
         when (val channel = json.channel()) {
             WebClientUtil.HANDSHAKE_CHANNEL -> {
-                val success = onHandshake(json)
-                onWebSocketOpen(success)
+                onWebSocketOpen()
             }
             WebClientUtil.CONNECT_CHANNEL -> {
                 onWebSocketConnect(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
@@ -106,10 +66,64 @@ class WebClient(private val clientKt: HttpClient) {
             }
         }
     }
+}
+
+class WebClient(private val clientKt: HttpClient) {
+    private var session: WebSocketSession? = null
+    private var clientId: String? = null
+    private var userListener: WsEventHandler? = null
+
+    fun run(host: String, port: Int?, path: String?, userListener: WsEventHandler) {
+        runBlocking {
+            try {
+                clientKt.webSocket(
+                    method = HttpMethod.Get,
+                    host = host,
+                    port = port,
+                    path = path
+                )
+                {
+                    session = this
+                    this@WebClient.userListener = userListener
+                    onWebSocketOpen()
+
+                    while (true) {
+                        try {
+                            val incomingMsg = incoming.receive() as? Frame.Text ?: continue
+                            val msg = incomingMsg.readText()
+                            val json = processIncomingMessage(msg)
+                            userListener.processIncomingMessage(this@WebClient, msg, json)
+                        } catch (e: Exception) {
+                            println("[WSClient]: Error while receiving: " + e.message)
+                            break
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("[WSClient]: Error while opening web-socket: " + e.message)
+            }
+        }
+        logWithThreadName("[WSClient]: Client closed. Goodbye!")
+        clientKt.close()
+    }
+
+    private fun processIncomingMessage(msg: String): HashMap<String, Any?> {
+        val json: HashMap<String, Any?> = JsonUtil.fromJson(msg)
+        when (val channel = json.channel()) {
+            WebClientUtil.HANDSHAKE_CHANNEL -> onHandshake(json)
+            else -> {
+                if (channel == WebClientUtil.EMPTY_CHANNEL_KEY) {
+                    logWithThreadName("[WSClient]: Unknown channel!")
+                }
+            }
+        }
+        return json
+    }
 
     private fun onHandshake(map: HashMap<String, Any?>): Boolean {
         val success = map.booleanValue(WebClientUtil.SUCCESSFUL_KEY)
         if (success) {
+            logWithThreadName("[WSClient]: Handshake is established!")
             if (clientId != null) {
                 throw IllegalStateException("Reassigning clientId!")
             }
@@ -118,31 +132,36 @@ class WebClient(private val clientKt: HttpClient) {
             try {
                 clientKt.close()
             } catch (e: Exception) {
+                logWithThreadName("[WSClient]: Can't establish a handshake:")
                 logWithThreadName(e.message)
             }
         }
         return success
     }
 
-    private suspend fun sendMessage(messageSupplier: () -> String) {
+    suspend fun sendMessage(messageSupplier: (clientId: String?) -> String) {
         try {
-            val message = messageSupplier.invoke()
-            logWithThreadName("SEND: $message")
+            val message = messageSupplier.invoke(clientId)
             session!!.send(message)
         } catch (t: Throwable) {
-            logWithThreadName("Error while sending: " + t.message)
+            logWithThreadName("[WSClient]: Error while sending: " + t.message)
         }
     }
 
     private suspend fun sendHeartbeat(): String? {
         return try {
-            val connectMessage = WebClientUtil.createConnectMessage(clientId)
+            val connectMessage = WebClientUtil.createConnectMessage(clientId!!)
             session?.send(connectMessage)
             connectMessage
         } catch (t: Throwable) {
-            logWithThreadName("Error while sending: " + t.message)
+            logWithThreadName("[WSClient]: Error while sending: " + t.message)
             null
         }
+    }
+
+    private suspend fun onWebSocketOpen() {
+        sendMessage { WebClientUtil.createHandshakeMessage() }
+        runConnectionUpdater()                 // Start heartbeat
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -152,7 +171,7 @@ class WebClient(private val clientKt: HttpClient) {
             while (true) {
                 val heartbeatMessage: String? = sendHeartbeat()
                 heartbeatMessage?.let {
-                    logWithThreadName("HEARTBEAT: $heartbeatMessage")
+                    logWithThreadName("[WSClient]: HEARTBEAT: $heartbeatMessage")
                     delay(20000)
                 } ?: break
             }

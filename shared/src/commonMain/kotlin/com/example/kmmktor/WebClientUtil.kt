@@ -1,7 +1,5 @@
 package com.example.kmmktor
 
-import kotlin.reflect.KClass
-
 class WebClientUtil {
     companion object {
         // wss://tools.dxfeed.com/webservice/cometd
@@ -9,6 +7,7 @@ class WebClientUtil {
         val PORT: Int? = null
         const val PATH: String = "/webservice/cometd"
 
+        const val EMPTY_CHANNEL_KEY = "/null"
         const val CHANNEL_KEY = "channel"
         const val CLIENT_KEY = "clientId"
         const val SUCCESSFUL_KEY = "successful"
@@ -18,13 +17,9 @@ class WebClientUtil {
         const val SERVICE_SUB_CHANNEL = "/service/sub"
         const val SERVICE_DATA_CHANNEL = "/service/data"
 
-        val valueTypeForHashMapArray: KClass<out Array<HashMap<String, Any>>>
-                = (Array(0) { HashMap<String, Any>() })::class
-
-        fun createHandshakeMessage(clientId: String?): String {
+        fun createHandshakeMessage(): String {
             val message: HashMap<String, Any?> = HashMap()
             message[CHANNEL_KEY] = HANDSHAKE_CHANNEL
-            message[CLIENT_KEY] = clientId
             return JsonUtil.toJson(listOf(message))
         }
 
