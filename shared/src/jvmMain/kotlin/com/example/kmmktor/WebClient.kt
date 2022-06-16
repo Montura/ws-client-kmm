@@ -3,10 +3,7 @@ package com.example.kmmktor
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 // todo: Address list
 //  - wss://tools.dxfeed.com/webservice/cometd
@@ -25,7 +22,7 @@ actual fun logWithThreadName(msg: String?) {
     println("[${Thread.currentThread().name}]: $msg")
 }
 
-class MySub(eventTypes: List<String>) : Subscription(eventTypes) {
+class MySubscriptionImpl : SubscriptionImpl() {
     override fun onRawData(data: RawData) {
         logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
     }
@@ -34,13 +31,24 @@ class MySub(eventTypes: List<String>) : Subscription(eventTypes) {
 fun main() {
     logWithThreadName("Run WebClientKt ...")
 
-    DxFeedApi.init(httpClient())
+    val api = DxFeedApi(httpClient())
 
     val eventTypes = listOf("Quote")
-    val sub = DxFeedApi.createSubscription(eventTypes) { MySub(eventTypes) }
+    val sub = api.createSubscription(eventTypes) {
+        object : SubscriptionImpl() {
+            override fun onRawData(data: RawData) {
+                logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
+            }
+        }
+    }
     sub.addSymbols(listOf("AAPL"))
-    DxFeedApi.subscribe(sub)
-    DxFeedApi.subscribe(sub)
+    sub.addSymbols(listOf("MSFT"))
+    runBlocking {
+        delay(10000)
+    }
 
+    sub.removeSymbols(listOf("AAPL"))
+
+    sub.removeSubscription()
     while (true) {}
 }

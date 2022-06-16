@@ -13,9 +13,12 @@ expect fun httpClient(): HttpClient
 class WebClient(private val clientKt: HttpClient) {
     private var session: WebSocketSession? = null
     private var clientId: String? = null
-    private val subs: MutableSet<Subscription> = HashSet()
+    private var sub: Subscription? = null
 
-    fun run(host: String, port: Int?, path: String?) {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val counterContext = newSingleThreadContext("CounterContext")
+
+    fun run(host: String, port: Int?, path: String?, sub: Subscription) {
         runBlocking {
             try {
                 clientKt.webSocket(
@@ -26,6 +29,7 @@ class WebClient(private val clientKt: HttpClient) {
                 )
                 {
                     session = this
+                    this@WebClient.sub = sub
                     onWebSocketOpen()
 
                     while (true) {
@@ -61,9 +65,7 @@ class WebClient(private val clientKt: HttpClient) {
                 onSubscribe(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
             }
             WebClientUtil.SERVICE_DATA_CHANNEL -> {
-                subs.forEach { sub ->
-                    val data = json.toString()
-                    sub.onRawData(RawData(data)) }
+                sub?.onRawData(json.toString())
             }
             else -> {
                 if (channel == WebClientUtil.EMPTY_CHANNEL_KEY) {
@@ -151,25 +153,31 @@ class WebClient(private val clientKt: HttpClient) {
         }
     }
 
-    fun createSubscription(eventTypes: List<String>, subProvider: (eventTypes: List<String>) -> Subscription): Subscription {
-        val sub: Subscription = subProvider.invoke(eventTypes)
-        subs.add(sub)
-        return sub
-    }
-
-    fun removeSubscription(sub: Subscription) {
-        subs.remove(sub)
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
-    fun subscribe(sub: Subscription) {
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+    fun subscribe(eventTypes: List<String>, symbolsToSubscribe: List<String>) {
+        if (symbolsToSubscribe.isEmpty()) return
         GlobalScope.launch(Dispatchers.Default) {
+            withContext(counterContext) {
+                while (clientId == null) {
+                    logWithThreadName("[WSClient]: is waiting for client")
+                    delay(3000)
+                }
+                sendMessage { WebClientUtil.createConnectMessage(clientId) }
+                sendMessage { WebClientUtil.createSubscribingMsg(clientId, eventTypes, symbolsToSubscribe) }
+            }
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+    fun unsubscribe(eventTypes: List<String>, symbolsToSubscribe: List<String>) {
+        if (symbolsToSubscribe.isEmpty()) return
+        GlobalScope.launch(counterContext) {
             while (clientId == null) {
                 logWithThreadName("[WSClient]: is waiting for client")
                 delay(3000)
             }
             sendMessage { WebClientUtil.createConnectMessage(clientId) }
-            sendMessage { WebClientUtil.createSubscriptionMessage(clientId, sub.eventTypes, sub.getSymbols().toList()) }
+            sendMessage { WebClientUtil.createUnsubscribingMsg(clientId, eventTypes, symbolsToSubscribe) }
         }
     }
 }
