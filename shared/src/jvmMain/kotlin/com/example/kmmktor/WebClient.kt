@@ -35,11 +35,7 @@ fun main() {
 
     val eventTypes = listOf("Quote")
     val sub = api.createSubscription(eventTypes) {
-        object : SubscriptionImpl() {
-            override fun onRawData(data: RawData) {
-                logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
-            }
-        }
+            data -> logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
     }
     sub.addSymbols(listOf("AAPL"))
     sub.addSymbols(listOf("MSFT"))
