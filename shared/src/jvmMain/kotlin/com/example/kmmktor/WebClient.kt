@@ -49,6 +49,6 @@ fun main() {
 
     sub.removeSymbols(listOf("AAPL"))
 
-    sub.removeSubscription()
+    sub.remove()
     while (true) {}
 }

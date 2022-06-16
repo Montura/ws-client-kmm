@@ -18,7 +18,7 @@ class WebClient(private val clientKt: HttpClient) {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val counterContext = newSingleThreadContext("CounterContext")
 
-    fun run(host: String, port: Int?, path: String?, sub: Subscription) {
+    fun run(host: String, port: Int?, path: String?) {
         runBlocking {
             try {
                 clientKt.webSocket(
@@ -29,7 +29,6 @@ class WebClient(private val clientKt: HttpClient) {
                 )
                 {
                     session = this
-                    this@WebClient.sub = sub
                     onWebSocketOpen()
 
                     while (true) {
@@ -49,6 +48,9 @@ class WebClient(private val clientKt: HttpClient) {
         }
         logWithThreadName("[WSClient]: Client closed. Goodbye!")
         clientKt.close()
+    }
+    fun setSubscription(sub: Subscription) {
+        this.sub = sub
     }
 
     private fun processIncomingMessage(msg: String): HashMap<String, Any?> {
