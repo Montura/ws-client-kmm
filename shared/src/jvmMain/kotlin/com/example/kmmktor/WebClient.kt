@@ -12,12 +12,6 @@ import kotlinx.coroutines.launch
 //  - wss://tools.dxfeed.com/webservice/cometd
 //  - ws://localhost:8080/dxfeed-webservice/cometd - Quote AAPL
 
-actual class CallbackHandler {
-    fun onSubscribe() {
-        println("USER_HANDLER: onSubscribe")
-    }
-}
-
 actual fun httpClient(): HttpClient {
     return HttpClient(CIO) {
         install(WebSockets)
@@ -26,11 +20,6 @@ actual fun httpClient(): HttpClient {
         }
     }
 }
-
-// OnWebSocketClose   -> log("Client closed: " + statusCode + " - " + reason);  this.session = null;
-// OnWebSocketConnect -> First connection + send handshake
-// OnWebSocketMessage -> Handshake
-// OnWebSocketError   -> log
 
 actual fun logWithThreadName(msg: String?) {
     println("[${Thread.currentThread().name}]: $msg")

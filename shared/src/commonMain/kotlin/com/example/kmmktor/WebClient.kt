@@ -6,8 +6,6 @@ import io.ktor.http.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 
-expect class CallbackHandler
-
 expect fun logWithThreadName(msg: String?)
 
 expect fun httpClient(): HttpClient

@@ -7,22 +7,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.native.concurrent.ThreadLocal
 
-// onRawData(RawData data)
-
-// Subscribtion sub = webClient.createSubscrtiption(
-//          () -> RawData { }
-// );
-
-// sub.addSymbols("AAPL");
-//
-// Subscribtion tsS = createTimeSeriesSubscription()
-
-//
-// remove(subscription)
-
-
 class DxFeedApi {
-    @ThreadLocal
+    @ThreadLocal // todo: check
     companion object {
         private lateinit var client: WebClient
 

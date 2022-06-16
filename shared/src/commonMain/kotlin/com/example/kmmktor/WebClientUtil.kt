@@ -2,8 +2,10 @@ package com.example.kmmktor
 
 class WebClientUtil {
     companion object {
-        // wss://tools.dxfeed.com/webservice/cometd
-        // ws://localhost:8080/dxfeed-webservice/cometd
+        // todo: Address list
+        //  - wss://tools.dxfeed.com/webservice/cometd
+        //  - ws://localhost:8080/dxfeed-webservice/cometd - Quote AAPL
+
         const val HOST: String = "localhost"
         val PORT: Int? = 8080
         const val PATH: String = "/dxfeed-webservice-3.312-SNAPSHOT/cometd"
