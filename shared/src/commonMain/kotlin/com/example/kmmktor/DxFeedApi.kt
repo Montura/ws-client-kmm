@@ -1,5 +1,12 @@
 package com.example.kmmktor
 
+import io.ktor.client.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlin.native.concurrent.ThreadLocal
+
 // onRawData(RawData data)
 
 // Subscribtion sub = webClient.createSubscrtiption(
@@ -13,18 +20,34 @@ package com.example.kmmktor
 //
 // remove(subscription)
 
-class DxFeedApi(private val webClient: WebClient) {
-    fun createSubscription(eventTypes: List<String>, subProvider: (eventTypes: List<String>) -> Subscription): Subscription {
-        return webClient.createSubscription(eventTypes, subProvider)
-    }
 
-    fun subscribe(sub: Subscription) {
-        webClient.subscribe(sub)
-    }
+class DxFeedApi {
+    @ThreadLocal
+    companion object {
+        private lateinit var client: WebClient
 
-    fun removeSubscription(sub: Subscription) {
-        webClient.removeSubscription(sub)
-    }
+        @OptIn(DelicateCoroutinesApi::class)
+        fun init(httpClient: HttpClient) {
+            client = WebClient(httpClient)
+            GlobalScope.launch(Dispatchers.Default) {
+                client.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
+            }
+        }
 
+        fun createSubscription(
+            eventTypes: List<String>,
+            subProvider: (eventTypes: List<String>) -> Subscription
+        ): Subscription {
+            return client.createSubscription(eventTypes, subProvider)
+        }
+
+        fun subscribe(sub: Subscription) {
+            client.subscribe(sub)
+        }
+
+        fun removeSubscription(sub: Subscription) {
+            client.removeSubscription(sub)
+        }
+    }
 //    fun createTimeSeriesSubscription(eventTypes: List<String>): Subscription {}
 }

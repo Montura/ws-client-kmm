@@ -38,26 +38,20 @@ actual fun logWithThreadName(msg: String?) {
 
 class MySub(eventTypes: List<String>) : Subscription(eventTypes) {
     override fun onRawData(data: RawData) {
-        println("USER_HANDLER: got raw data:\n\t" + data.json)
+        logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
     }
 }
 
-@OptIn(DelicateCoroutinesApi::class)
 fun main() {
     logWithThreadName("Run WebClientKt ...")
 
-    val webClient = WebClient(httpClient())
-    val api = DxFeedApi(webClient)
-
-    GlobalScope.launch(Dispatchers.Default) {
-        webClient.run(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
-    }
+    DxFeedApi.init(httpClient())
 
     val eventTypes = listOf("Quote")
-    val sub = api.createSubscription(eventTypes) { MySub(eventTypes) }
+    val sub = DxFeedApi.createSubscription(eventTypes) { MySub(eventTypes) }
     sub.addSymbols(listOf("AAPL"))
-    api.subscribe(sub)
-    api.subscribe(sub)
+    DxFeedApi.subscribe(sub)
+    DxFeedApi.subscribe(sub)
 
     while (true) {}
 }
