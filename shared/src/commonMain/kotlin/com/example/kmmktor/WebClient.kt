@@ -61,10 +61,10 @@ class WebClient(private val clientKt: HttpClient) {
                 onHandshake(json)
             }
             WebClientUtil.CONNECT_CHANNEL -> {
-                onWebSocketConnect(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
+//                onWebSocketConnect(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
             }
             WebClientUtil.SERVICE_SUB_CHANNEL -> {
-                onSubscribe(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
+//                onSubscribe(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
             }
             WebClientUtil.SERVICE_DATA_CHANNEL -> {
                 sub?.onRawData(json.toString())
@@ -109,9 +109,9 @@ class WebClient(private val clientKt: HttpClient) {
     private fun onSubscribe(success: Boolean) {
         logWithThreadName("[WSClient]:")
         if (success) {
-            logWithThreadName("\tConnection is established!")
+            logWithThreadName("\tonSubscribe is successful!")
         } else {
-            logWithThreadName("\tCan't establish a connection!")
+            logWithThreadName("\tonSubscribe isn't successful!")
         }
     }
 
