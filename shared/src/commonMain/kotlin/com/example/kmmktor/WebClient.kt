@@ -15,9 +15,9 @@ expect fun httpClient(): HttpClient
 class WebClient(private val clientKt: HttpClient) {
     private var session: WebSocketSession? = null
     private var clientId: String? = null
-    private var userListener: WsEventHandler? = null
+    private val subs: MutableSet<Subscription> = HashSet()
 
-    fun run(host: String, port: Int?, path: String?, userListener: WsEventHandler) {
+    fun run(host: String, port: Int?, path: String?) {
         runBlocking {
             try {
                 clientKt.webSocket(
@@ -28,7 +28,6 @@ class WebClient(private val clientKt: HttpClient) {
                 )
                 {
                     session = this
-                    this@WebClient.userListener = userListener
                     onWebSocketOpen()
 
                     while (true) {
@@ -36,7 +35,6 @@ class WebClient(private val clientKt: HttpClient) {
                             val incomingMsg = incoming.receive() as? Frame.Text ?: continue
                             val msg = incomingMsg.readText()
                             val json = processIncomingMessage(msg)
-                            userListener.processIncomingMessage(this@WebClient, msg, json)
                         } catch (e: Exception) {
                             println("[WSClient]: Error while receiving: " + e.message)
                             break
@@ -53,8 +51,22 @@ class WebClient(private val clientKt: HttpClient) {
 
     private fun processIncomingMessage(msg: String): HashMap<String, Any?> {
         val json: HashMap<String, Any?> = JsonUtil.fromJson(msg)
+        logWithThreadName("RECV: $msg")
         when (val channel = json.channel()) {
-            WebClientUtil.HANDSHAKE_CHANNEL -> onHandshake(json)
+            WebClientUtil.HANDSHAKE_CHANNEL -> {
+                onHandshake(json)
+            }
+            WebClientUtil.CONNECT_CHANNEL -> {
+                onWebSocketConnect(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
+            }
+            WebClientUtil.SERVICE_SUB_CHANNEL -> {
+                onSubscribe(json.booleanValue(WebClientUtil.SUCCESSFUL_KEY))
+            }
+            WebClientUtil.SERVICE_DATA_CHANNEL -> {
+                subs.forEach { sub ->
+                    val data = json.toString()
+                    sub.onRawData(RawData(data)) }
+            }
             else -> {
                 if (channel == WebClientUtil.EMPTY_CHANNEL_KEY) {
                     logWithThreadName("[WSClient]: Unknown channel!")
@@ -83,9 +95,28 @@ class WebClient(private val clientKt: HttpClient) {
         return success
     }
 
-    suspend fun sendMessage(messageSupplier: (clientId: String?) -> String) {
+    private fun onWebSocketConnect(success: Boolean) {
+        logWithThreadName("[WSClient]:")
+        if (success) {
+            logWithThreadName("\tConnection is established!")
+        } else {
+            logWithThreadName("\tCan't establish a connection!")
+        }
+    }
+
+    private fun onSubscribe(success: Boolean) {
+        logWithThreadName("[WSClient]:")
+        if (success) {
+            logWithThreadName("\tConnection is established!")
+        } else {
+            logWithThreadName("\tCan't establish a connection!")
+        }
+    }
+
+    private suspend fun sendMessage(messageSupplier: (clientId: String?) -> String) {
         try {
             val message = messageSupplier.invoke(clientId)
+            logWithThreadName("SEND: $message")
             session!!.send(message)
         } catch (t: Throwable) {
             logWithThreadName("[WSClient]: Error while sending: " + t.message)
@@ -119,6 +150,28 @@ class WebClient(private val clientKt: HttpClient) {
                     delay(20000)
                 } ?: break
             }
+        }
+    }
+
+    fun createSubscription(eventTypes: List<String>, subProvider: (eventTypes: List<String>) -> Subscription): Subscription {
+        val sub: Subscription = subProvider.invoke(eventTypes)
+        subs.add(sub)
+        return sub
+    }
+
+    fun removeSubscription(sub: Subscription) {
+        subs.remove(sub)
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun subscribe(sub: Subscription) {
+        GlobalScope.launch(Dispatchers.Default) {
+            while (clientId == null) {
+                logWithThreadName("[WSClient]: is waiting for client")
+                delay(3000)
+            }
+            sendMessage { WebClientUtil.createConnectMessage(clientId) }
+            sendMessage { WebClientUtil.createSubscriptionMessage(clientId, sub.eventTypes, sub.getSymbols().toList()) }
         }
     }
 }
