@@ -17,6 +17,8 @@ class WebClient(private val clientKt: HttpClient) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val counterContext = newSingleThreadContext("CounterContext")
+    private val eventQueue = ArrayDeque<(String?) -> String>()
+
 
     fun run(host: String, port: Int?, path: String?) {
         runBlocking {
@@ -158,14 +160,21 @@ class WebClient(private val clientKt: HttpClient) {
     @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun subscribe(eventTypes: List<String>, symbolsToSubscribe: List<String>) {
         if (symbolsToSubscribe.isEmpty()) return
+        runBlocking {
+            withContext(counterContext) {
+                logWithThreadName("Add subscriptions")
+                eventQueue.addFirst { WebClientUtil.createConnectMessage(clientId) }
+                eventQueue.addFirst { WebClientUtil.createSubscribingMsg(clientId, eventTypes, symbolsToSubscribe) }
+            }
+        }
         GlobalScope.launch(Dispatchers.Default) {
             withContext(counterContext) {
                 while (clientId == null) {
                     logWithThreadName("[WSClient]: is waiting for client")
                     delay(3000)
                 }
-                sendMessage { WebClientUtil.createConnectMessage(clientId) }
-                sendMessage { WebClientUtil.createSubscribingMsg(clientId, eventTypes, symbolsToSubscribe) }
+                sendMessage(eventQueue.removeLast())
+                sendMessage(eventQueue.removeLast())
             }
         }
     }
@@ -173,13 +182,20 @@ class WebClient(private val clientKt: HttpClient) {
     @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun unsubscribe(eventTypes: List<String>, symbolsToSubscribe: List<String>) {
         if (symbolsToSubscribe.isEmpty()) return
+        runBlocking {
+            withContext(counterContext) {
+                logWithThreadName("Remove subscriptions")
+                eventQueue.addFirst { WebClientUtil.createConnectMessage(clientId) }
+                eventQueue.addFirst { WebClientUtil.createUnsubscribingMsg(clientId, eventTypes, symbolsToSubscribe) }
+            }
+        }
         GlobalScope.launch(counterContext) {
             while (clientId == null) {
                 logWithThreadName("[WSClient]: is waiting for client")
                 delay(3000)
             }
-            sendMessage { WebClientUtil.createConnectMessage(clientId) }
-            sendMessage { WebClientUtil.createUnsubscribingMsg(clientId, eventTypes, symbolsToSubscribe) }
+            sendMessage(eventQueue.removeLast())
+            sendMessage(eventQueue.removeLast())
         }
     }
 }
