@@ -2,13 +2,13 @@ package com.example.kmmktor
 
 class Subscription(private val client: WebClient,
                    private val activeEventTypes: List<String>,
-                   subProvider: (RawData) -> Unit
+                   onEventCallback: (RawData) -> Unit
 ) {
-    private var subImpl: (RawData) -> Unit = {  }
+    private var onEvent: (RawData) -> Unit = {  }
     private val activeSymbols: MutableSet<String> = mutableSetOf()
 
     init {
-        subImpl = subProvider
+        onEvent = onEventCallback
     }
 
     fun remove() {
@@ -16,7 +16,7 @@ class Subscription(private val client: WebClient,
     }
 
     fun onRawData(data: String) {
-        subImpl.invoke(RawData(data))
+        onEvent.invoke(RawData(data))
     }
 
     fun addSymbols(symbols: List<String>) {

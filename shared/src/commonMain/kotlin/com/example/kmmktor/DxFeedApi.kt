@@ -15,9 +15,9 @@ class DxFeedApi(httpClient: HttpClient) {
 
     fun createSubscription(
         eventTypes: List<String>,
-        subProvider: (RawData) -> Unit
+        onEventCallback: (RawData) -> Unit
     ): Subscription {
-        val sub = Subscription(client, eventTypes, subProvider)
+        val sub = Subscription(client, eventTypes, onEventCallback)
         client.setSubscription(sub)
         return sub
     }
