@@ -31,7 +31,7 @@ class MySubscriptionImpl : SubscriptionImpl() {
 fun main() {
     logWithThreadName("Run WebClientKt ...")
 
-    val api = DxFeedApi(httpClient())
+    val api = DxFeedApi(httpClient(), WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
 
     val eventTypes = listOf("Quote")
     val sub = api.createSubscription(eventTypes) {
