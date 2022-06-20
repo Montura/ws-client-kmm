@@ -2,28 +2,38 @@ import SwiftUI
 import shared
 
 
+func delayWithSeconds(_ seconds: Double, completion: @escaping () -> ()) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+        completion()
+    }
+}
+
 struct ContentView: View {
 	let greeting = Greeting()
-    let client = WebClient(clientKt: WebClientKt.httpClient())
-    
+
 	@State var greet = "Loading..."
     
 	func load() {
-        let api = DxFeedApi(httpClient: WebClientKt.httpClient());
-        
+        let api = DxFeedApi(host: "208.93.103.3", port: 7521, path: "/wapi/rsocket");
+
         
         let eventTypes = ["Quote"]
         let sub = api.createSubscription(eventTypes: eventTypes) {
-            data in print(data.json ?? "null")
+            data in WebClientKt.logWithThreadName(msg: data.json ?? "null")
         }
         
         sub.addSymbols(symbols: ["AAPL"])
         sub.addSymbols(symbols: ["MSFT"])
-    
+        
+        delayWithSeconds(10) {
+            sub.removeSymbols(symbols: ["AAPL"])
+        }
 
-        sub.removeSymbols(symbols: ["AAPL"])
-
-        sub.remove()
+        
+        delayWithSeconds(10.0) {
+            sub.remove()
+        }
+        
     }
 
 	var body: some View {
