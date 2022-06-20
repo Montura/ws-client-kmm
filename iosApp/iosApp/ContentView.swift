@@ -9,8 +9,6 @@ func delayWithSeconds(_ seconds: Double, completion: @escaping () -> ()) {
 }
 
 struct ContentView: View {
-	let greeting = Greeting()
-
 	@State var greet = "Loading..."
     
 	func load() {
@@ -37,7 +35,7 @@ struct ContentView: View {
     }
 
 	var body: some View {
-		Text(greet).onAppear() {
+		Text("Loading...").onAppear() {
             load()
         }
 	}

@@ -57,12 +57,6 @@ actual fun logWithThreadName(msg: String?) {
     println("[${Thread.currentThread().name}]: $msg")
 }
 
-class MySubscriptionImpl : SubscriptionImpl() {
-    override fun onRawData(data: RawData) {
-        logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
-    }
-}
-
 fun main() {
     logWithThreadName("Run WebClientKt ...")
 
