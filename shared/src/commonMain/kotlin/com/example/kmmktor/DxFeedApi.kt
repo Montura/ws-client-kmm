@@ -1,5 +1,7 @@
 package com.example.kmmktor
 
+import com.example.kmmktor.response.Event
+
 class DxFeedApi(host: String, port: Int?, path: String) {
     private var client: WebClient
 
@@ -7,11 +9,13 @@ class DxFeedApi(host: String, port: Int?, path: String) {
         client = WebClient(host, port, path)
     }
 
-    fun createSubscription(
+    fun <EventType: Event>createSubscription(
         eventTypes: List<String>,
-        onEventCallback: (RawData) -> Unit
-    ): Subscription {
-        return Subscription(client, eventTypes, onEventCallback)
+        onEventCallback: Subscription.DXFeedEventListener<EventType>
+    ): Subscription<EventType> {
+        val subscription = Subscription<EventType>(client, eventTypes.toSet())
+        subscription.addEventListener(onEventCallback)
+        return subscription
     }
 
 //    fun createTimeSeriesSubscription(eventTypes: List<String>): Subscription {}

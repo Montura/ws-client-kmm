@@ -24,13 +24,13 @@ struct ContentView: View {
         
         sub.addSymbols(symbols: ["AAPL"])
         sub.addSymbols(symbols: ["MSFT"])
-        
+
         delayWithSeconds(10) {
             sub.removeSymbols(symbols: ["AAPL"])
         }
 
         
-        delayWithSeconds(10.0) {
+        delayWithSeconds(15) {
             sub.remove()
         }
         

@@ -1,5 +1,6 @@
 package com.example.kmmktor
 
+import com.example.kmmktor.response.data.Quote
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
@@ -68,10 +69,14 @@ fun main() {
 
     val api = DxFeedApi(WebClientUtil.HOST, WebClientUtil.PORT, WebClientUtil.PATH)
 
-    val eventTypes = listOf("Quote")
-    val sub = api.createSubscription(eventTypes) {
-            data -> logWithThreadName("USER_HANDLER: got raw data:\n\t" + data.json)
+    val listener = object : Subscription.DXFeedEventListener<Quote> {
+        override fun eventsReceived(events: List<Quote>) {
+            events.forEach { logWithThreadName("USER_HANDLER: got raw data:\n\t$it") }
+        }
     }
+
+    val eventTypes = listOf("Quote")
+    val sub = api.createSubscription(eventTypes, listener)
     sub.addSymbols(listOf("AAPL"))
     sub.addSymbols(listOf("MSFT"))
 
