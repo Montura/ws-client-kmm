@@ -3,9 +3,9 @@ package com.example.kmmktor
 class WebClientUtil {
     companion object {
         // todo: Address list
-        //  - wss://tools.dxfeed.com/webservice/cometd
-        //  - ws://localhost:8080/dxfeed-webservice/cometd - Quote AAPL
-        //  - 208.93.103.3:7521/wapi/rsocket
+        //   - wss://tools.dxfeed.com/webservice/cometd
+        //   - ws://localhost:8080/dxfeed-webservice/cometd - Quote AAPL
+        //   - 208.93.103.3:7521/wapi/rsocket
         const val HOST: String = "208.93.103.3"
         val PORT: Int? = 7521
         const val PATH: String = "/wapi/rsocket"

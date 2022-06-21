@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.minutes
 // todo: Address list
 //  - wss://tools.dxfeed.com/webservice/cometd
 //  - ws://localhost:8080/dxfeed-webservice/cometd - Quote AAPL
-
+//  - 208.93.103.3:7521/wapi/rsocket
 actual fun httpClient(): HttpClient {
     return HttpClient(CIO) {
         install(WebSockets)
