@@ -1,7 +1,0 @@
-
-./shared/build/bin/iosArm64/podDebugFramework/shared.framework/Pods_iosApp(Pods_iosApp_vers.o):
-
-./shared/build/bin/iosArm64/podDebugFramework/shared.framework/Pods_iosApp(Pods-iosApp-dummy.o):
-_OBJC_CLASS_$_NSObject
-_OBJC_METACLASS_$_NSObject
-__objc_empty_cache
