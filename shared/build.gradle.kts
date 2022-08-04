@@ -31,13 +31,13 @@ kotlin {
             dependencies {
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-websockets:$ktorVersion")
+                implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation("io.rsocket.kotlin:rsocket-ktor-client:0.15.4")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
             }
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:$ktorVersion")
                 implementation(kotlin("stdlib-jdk8"))
             }
         }
@@ -55,9 +55,7 @@ kotlin {
 ////            iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
 ////            iosSimulatorArm64Main.dependsOn(this)
-            dependencies {
-                implementation("io.ktor:ktor-client-darwin:$ktorVersion")
-            }
+            dependencies {}
         }
     }
 }

@@ -19,8 +19,6 @@ import kotlinx.serialization.json.Json
 
 expect fun logWithThreadName(msg: String?)
 
-expect fun httpClient(): HttpClient
-
 @OptIn(DelicateCoroutinesApi::class)
 class WebClient(host: String, port: Int?, path: String?) {
     private val eventDeserializer: EventDeserializer = EventDeserializer()
