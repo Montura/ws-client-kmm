@@ -12,7 +12,8 @@ struct ContentView: View {
 	@State var greet = "Loading..."
     
 	func load() {
-        let api = DxFeedApi(host: "208.93.103.3", port: 7521, path: "/wapi/rsocket");
+	    // todo: set up VPN GlobalProtect on iPhone
+        let api = DxFeedApi(host: "demo.dxfeed.com", port: 7521, path: "/wapi/rsocket");
 
         
         let eventTypes = ["Quote"]
